@@ -1,5 +1,5 @@
 from django.db import models
-from datetime import date
+from datetime import date, timedelta
 
 # 1. Books Table
 class Book(models.Model):
@@ -43,7 +43,23 @@ class Borrowing(models.Model):
     def __str__(self):
         return f"Transaction #{self.id}: {self.borrower_name} borrowed '{self.book.title}'"
 
-   
+    def save(self, *args, **kwargs):
+        """
+        Ensure borrow_date and due_date are always present.
+        Defaults:
+        - borrow_date -> today (if missing)
+        - due_date   -> borrow_date + 14 days (if missing)
+        NOTE: Does NOT modify an explicitly provided due_date, so overdue
+        calculations remain accurate even for older records.
+        """
+        if self.borrow_date is None:
+            self.borrow_date = date.today()
+
+        if not self.due_date:
+            self.due_date = self.borrow_date + timedelta(days=14)
+
+        super().save(*args, **kwargs)
+
     @property
     def overdue_days(self):
         if self.return_date:
@@ -60,7 +76,7 @@ class History(models.Model):
     transaction = models.ForeignKey(Borrowing, on_delete=models.CASCADE, related_name='history_logs')
     
     borrow_date = models.DateField()
-    return_date = models.DateField()
+    return_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"History Log for Transaction #{self.transaction.id}"
