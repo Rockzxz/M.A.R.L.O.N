@@ -23,7 +23,9 @@ function App() {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [deleteBookId, setDeleteBookId] = useState<number | null>(null);
 
-  const [search, setSearch] = useState("");
+  const [bookSearch, setBookSearch] = useState("");
+  const [borrowingSearch, setBorrowingSearch] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
 
   const fetchAll = async () => {
     try {
@@ -55,17 +57,68 @@ function App() {
       [book.title, book.author, book.genre || "", book.isbn || ""]
         .join(" ")
         .toLowerCase()
-        .includes(search.toLowerCase())
+        .includes(bookSearch.toLowerCase())
     );
-  }, [books, search]);
+  }, [books, bookSearch]);
 
   const activeBorrowings = useMemo(
     () => borrowings.filter((item) => !item.return_date),
     [borrowings]
   );
 
+  const filteredBorrowings = useMemo(() => {
+    return activeBorrowings.filter((item) =>
+      [
+        item.borrower_name,
+        item.borrower_contact_number,
+        item.borrower_email_address,
+        item.book_details?.title || "",
+        item.borrow_date,
+        item.due_date,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(borrowingSearch.toLowerCase())
+    );
+  }, [activeBorrowings, borrowingSearch]);
+
+  const historyRecords = useMemo(() => {
+    return history.map((historyItem) => {
+      const relatedBorrowing = borrowings.find(
+        (b) => b.id === historyItem.transaction
+      );
+
+      return {
+        ...historyItem,
+        borrower_name: relatedBorrowing?.borrower_name || "-",
+        borrower_contact_number: relatedBorrowing?.borrower_contact_number || "-",
+        borrower_email_address: relatedBorrowing?.borrower_email_address || "-",
+        book_title: relatedBorrowing?.book_details?.title || `Book ID: ${relatedBorrowing?.book || "-"}`,
+         overdue_days: relatedBorrowing?.overdue_days ?? 0, 
+      };
+    });
+  }, [history, borrowings]);
+
+  const filteredHistory = useMemo(() => {
+    return historyRecords.filter((item) =>
+      [
+        item.id,
+        item.transaction,
+        item.borrower_name,
+        item.borrower_contact_number,
+        item.borrower_email_address,
+        item.book_title,
+        item.borrow_date,
+        item.return_date || "",
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(historySearch.toLowerCase())
+    );
+  }, [historyRecords, historySearch]);
+
   const availableBooksCount = useMemo(
-    () => books.filter((b) => b.status === "Available").length,
+    () => books.filter((b) => b.copies_available > 0).length,
     [books]
   );
 
@@ -148,7 +201,7 @@ function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-cyan-50">
       <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />
 
       <main className="flex-1 p-8">
@@ -158,13 +211,13 @@ function App() {
         />
 
         {error && (
-          <div className="mb-4 rounded-xl bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+          <div className="mb-6 rounded-2xl bg-red-50 border border-red-200 text-red-700 px-5 py-4 shadow-sm">
             {error}
           </div>
         )}
 
         {loading ? (
-          <div className="bg-white rounded-2xl shadow-md p-8 text-slate-600">
+          <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-white/60 shadow-lg p-8 text-slate-600">
             Loading data...
           </div>
         ) : (
@@ -178,23 +231,27 @@ function App() {
                   <StatCard label="Overdue Records" value={overdueCount} />
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
-                    <h3 className="text-xl font-bold text-slate-800 mb-4">Recent Borrowings</h3>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                  <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg border border-white/60 p-6 h-fit">
+                    <h3 className="text-2xl font-bold text-slate-800 mb-5">
+                      Recent Borrowings
+                    </h3>
                     <div className="space-y-3">
                       {borrowings.slice(0, 5).map((item) => (
                         <div
                           key={item.id}
-                          className="border border-slate-200 rounded-xl p-4 flex justify-between items-center"
+                          className="rounded-2xl border border-slate-200 bg-white p-4 flex justify-between items-center shadow-sm"
                         >
                           <div>
-                            <p className="font-semibold text-slate-800">{item.borrower_name}</p>
+                            <p className="font-semibold text-slate-800">
+                              {item.borrower_name}
+                            </p>
                             <p className="text-sm text-slate-500">
                               {item.book_details?.title || `Book ID: ${item.book}`}
                             </p>
                           </div>
                           <span
-                            className={`text-xs px-3 py-1 rounded-full font-medium ${
+                            className={`text-xs px-3 py-1 rounded-full font-semibold ${
                               item.return_date
                                 ? "bg-slate-200 text-slate-700"
                                 : item.overdue_days > 0
@@ -213,17 +270,19 @@ function App() {
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
-                    <h3 className="text-xl font-bold text-slate-800 mb-4">Quick Actions</h3>
+                  <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg border border-white/60 p-6">
+                    <h3 className="text-2xl font-bold text-slate-800 mb-5">
+                      Quick Actions
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <button
                         onClick={() => {
                           setEditingBook(null);
                           setBookModalOpen(true);
                         }}
-                        className="rounded-2xl bg-blue-600 text-white p-5 text-left hover:bg-blue-700"
+                        className="rounded-3xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white p-5 text-left shadow-lg hover:scale-[1.02] transition"
                       >
-                        <p className="font-bold">Add Book</p>
+                        <p className="font-bold text-lg">Add Book</p>
                         <p className="text-sm text-blue-100 mt-1">
                           Register a new book in the system.
                         </p>
@@ -231,9 +290,9 @@ function App() {
 
                       <button
                         onClick={() => setBorrowModalOpen(true)}
-                        className="rounded-2xl bg-emerald-600 text-white p-5 text-left hover:bg-emerald-700"
+                        className="rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white p-5 text-left shadow-lg hover:scale-[1.02] transition"
                       >
-                        <p className="font-bold">Borrow Book</p>
+                        <p className="font-bold text-lg">Borrow Book</p>
                         <p className="text-sm text-emerald-100 mt-1">
                           Create a new borrowing transaction.
                         </p>
@@ -241,9 +300,9 @@ function App() {
 
                       <button
                         onClick={() => setCurrentPage("books")}
-                        className="rounded-2xl bg-amber-500 text-white p-5 text-left hover:bg-amber-600"
+                        className="rounded-3xl bg-gradient-to-r from-amber-500 to-orange-500 text-white p-5 text-left shadow-lg hover:scale-[1.02] transition"
                       >
-                        <p className="font-bold">Manage Books</p>
+                        <p className="font-bold text-lg">Manage Books</p>
                         <p className="text-sm text-amber-100 mt-1">
                           Edit or remove book records.
                         </p>
@@ -251,9 +310,9 @@ function App() {
 
                       <button
                         onClick={() => setCurrentPage("history")}
-                        className="rounded-2xl bg-violet-600 text-white p-5 text-left hover:bg-violet-700"
+                        className="rounded-3xl bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white p-5 text-left shadow-lg hover:scale-[1.02] transition"
                       >
-                        <p className="font-bold">View History</p>
+                        <p className="font-bold text-lg">View History</p>
                         <p className="text-sm text-violet-100 mt-1">
                           Check completed borrowing records.
                         </p>
@@ -265,14 +324,14 @@ function App() {
             )}
 
             {currentPage === "books" && (
-              <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+              <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-7">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                   <input
                     type="text"
                     placeholder="Search by title, author, genre, or ISBN"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="border border-slate-300 rounded-xl px-4 py-3 w-full md:max-w-md"
+                    value={bookSearch}
+                    onChange={(e) => setBookSearch(e.target.value)}
+                    className="w-full md:max-w-xl rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
 
                   <button
@@ -280,64 +339,73 @@ function App() {
                       setEditingBook(null);
                       setBookModalOpen(true);
                     }}
-                    className="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700"
+                    className="px-6 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold shadow-lg hover:scale-[1.02] transition"
                   >
                     Add Book
                   </button>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-2xl">
                   <table className="w-full text-left min-w-[1000px]">
                     <thead>
-                      <tr className="border-b border-slate-200 text-slate-600">
-                        <th className="py-3 pr-4">Title</th>
-                        <th className="py-3 pr-4">Author</th>
-                        <th className="py-3 pr-4">ISBN</th>
-                        <th className="py-3 pr-4">Genre</th>
-                        <th className="py-3 pr-4">Year</th>
-                        <th className="py-3 pr-4">Available</th>
-                        <th className="py-3 pr-4">Borrowed</th>
-                        <th className="py-3 pr-4">Status</th>
-                        <th className="py-3 pr-4">Actions</th>
+                      <tr className="text-slate-600 border-b border-slate-200">
+                        <th className="py-4 pr-4 font-bold">Title</th>
+                        <th className="py-4 pr-4 font-bold">Author</th>
+                        <th className="py-4 pr-4 font-bold">ISBN</th>
+                        <th className="py-4 pr-4 font-bold">Genre</th>
+                        <th className="py-4 pr-4 font-bold">Year</th>
+                        <th className="py-4 pr-4 font-bold">Available</th>
+                        <th className="py-4 pr-4 font-bold">Borrowed</th>
+                        <th className="py-4 pr-4 font-bold">Status</th>
+                        <th className="py-4 pr-4 font-bold">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredBooks.map((book) => (
-                        <tr key={book.id} className="border-b border-slate-100">
-                          <td className="py-4 pr-4 font-semibold text-slate-800">{book.title}</td>
-                          <td className="py-4 pr-4">{book.author}</td>
-                          <td className="py-4 pr-4">{book.isbn || "-"}</td>
-                          <td className="py-4 pr-4">{book.genre || "-"}</td>
-                          <td className="py-4 pr-4">{book.year_published || "-"}</td>
-                          <td className="py-4 pr-4">{book.copies_available}</td>
-                          <td className="py-4 pr-4">{book.copies_borrowed}</td>
-                          <td className="py-4 pr-4">
+                        <tr
+                          key={book.id}
+                          className="border-b border-slate-100 hover:bg-blue-50/60 transition"
+                        >
+                          <td className="py-5 pr-4 font-semibold text-slate-800">
+                            {book.title}
+                          </td>
+                          <td className="py-5 pr-4 text-slate-700">{book.author}</td>
+                          <td className="py-5 pr-4 text-slate-700">{book.isbn || "-"}</td>
+                          <td className="py-5 pr-4 text-slate-700">{book.genre || "-"}</td>
+                          <td className="py-5 pr-4 text-slate-700">
+                            {book.year_published || "-"}
+                          </td>
+                          <td className="py-5 pr-4 font-semibold text-slate-800">
+                            {book.copies_available}
+                          </td>
+                          <td className="py-5 pr-4 font-semibold text-slate-800">
+                            {book.copies_borrowed}
+                          </td>
+                          <td className="py-5 pr-4">
                             <span
-                              className={`text-xs px-3 py-1 rounded-full font-medium ${
-                                book.status === "Available"
+                              className={`text-xs px-4 py-2 rounded-full font-bold ${
+                                book.copies_available > 0
                                   ? "bg-emerald-100 text-emerald-700"
-                                  : book.status === "Borrowed"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-amber-100 text-amber-700"
+                                  : "bg-red-100 text-red-700"
                               }`}
                             >
-                              {book.status}
+                              {book.copies_available > 0 ? "Available" : "Borrowed"}
                             </span>
                           </td>
-                          <td className="py-4 pr-4">
+                          <td className="py-5 pr-4">
                             <div className="flex gap-2">
                               <button
                                 onClick={() => {
                                   setEditingBook(book);
                                   setBookModalOpen(true);
                                 }}
-                                className="px-3 py-2 rounded-lg bg-amber-500 text-white hover:bg-amber-600"
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium shadow hover:opacity-95"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => setDeleteBookId(book.id)}
-                                className="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 text-white font-medium shadow hover:opacity-95"
                               >
                                 Delete
                               </button>
@@ -348,7 +416,7 @@ function App() {
 
                       {filteredBooks.length === 0 && (
                         <tr>
-                          <td colSpan={9} className="py-8 text-center text-slate-500">
+                          <td colSpan={9} className="py-10 text-center text-slate-500">
                             No books found.
                           </td>
                         </tr>
@@ -360,48 +428,57 @@ function App() {
             )}
 
             {currentPage === "borrowings" && (
-              <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
-                <div className="flex justify-end mb-5">
+              <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-7">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                  <input
+                    type="text"
+                    placeholder="Search borrower, contact, email, book, or date"
+                    value={borrowingSearch}
+                    onChange={(e) => setBorrowingSearch(e.target.value)}
+                    className="w-full md:max-w-xl rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+
                   <button
                     onClick={() => setBorrowModalOpen(true)}
-                    className="bg-emerald-600 text-white px-5 py-3 rounded-xl hover:bg-emerald-700"
+                    className="px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-semibold shadow-lg hover:scale-[1.02] transition"
                   >
                     New Borrowing
                   </button>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-2xl">
                   <table className="w-full text-left min-w-[1100px]">
                     <thead>
                       <tr className="border-b border-slate-200 text-slate-600">
-                        <th className="py-3 pr-4">Borrower</th>
-                        <th className="py-3 pr-4">Contact</th>
-                        <th className="py-3 pr-4">Email</th>
-                        <th className="py-3 pr-4">Book</th>
-                        <th className="py-3 pr-4">Borrow Date</th>
-                        <th className="py-3 pr-4">Due Date</th>
-                        <th className="py-3 pr-4">Return Date</th>
-                        <th className="py-3 pr-4">Overdue</th>
-                        <th className="py-3 pr-4">Action</th>
+                        <th className="py-4 pr-4 font-bold">Borrower</th>
+                        <th className="py-4 pr-4 font-bold">Contact</th>
+                        <th className="py-4 pr-4 font-bold">Email</th>
+                        <th className="py-4 pr-4 font-bold">Book</th>
+                        <th className="py-4 pr-4 font-bold">Borrow Date</th>
+                        <th className="py-4 pr-4 font-bold">Due Date</th>
+                        <th className="py-4 pr-4 font-bold">Overdue</th>
+                        <th className="py-4 pr-4 font-bold">Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {borrowings.map((item) => (
-                        <tr key={item.id} className="border-b border-slate-100">
-                          <td className="py-4 pr-4 font-semibold text-slate-800">
+                      {filteredBorrowings.map((item) => (
+                        <tr
+                          key={item.id}
+                          className="border-b border-slate-100 hover:bg-blue-50/60 transition"
+                        >
+                          <td className="py-5 pr-4 font-semibold text-slate-800">
                             {item.borrower_name}
                           </td>
-                          <td className="py-4 pr-4">{item.borrower_contact_number}</td>
-                          <td className="py-4 pr-4">{item.borrower_email_address}</td>
-                          <td className="py-4 pr-4">
+                          <td className="py-5 pr-4">{item.borrower_contact_number}</td>
+                          <td className="py-5 pr-4">{item.borrower_email_address}</td>
+                          <td className="py-5 pr-4">
                             {item.book_details?.title || `Book ID: ${item.book}`}
                           </td>
-                          <td className="py-4 pr-4">{item.borrow_date}</td>
-                          <td className="py-4 pr-4">{item.due_date}</td>
-                          <td className="py-4 pr-4">{item.return_date || "-"}</td>
-                          <td className="py-4 pr-4">
+                          <td className="py-5 pr-4">{item.borrow_date}</td>
+                          <td className="py-5 pr-4">{item.due_date}</td>
+                          <td className="py-5 pr-4">
                             <span
-                              className={`text-xs px-3 py-1 rounded-full font-medium ${
+                              className={`text-xs px-4 py-2 rounded-full font-bold ${
                                 item.overdue_days > 0
                                   ? "bg-red-100 text-red-700"
                                   : "bg-emerald-100 text-emerald-700"
@@ -410,25 +487,21 @@ function App() {
                               {item.overdue_days} day(s)
                             </span>
                           </td>
-                          <td className="py-4 pr-4">
-                            {!item.return_date ? (
-                              <button
-                                onClick={() => handleReturnBook(item.id)}
-                                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                              >
-                                Return
-                              </button>
-                            ) : (
-                              <span className="text-slate-400">Completed</span>
-                            )}
+                          <td className="py-5 pr-4">
+                            <button
+                              onClick={() => handleReturnBook(item.id)}
+                              className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium shadow hover:opacity-95"
+                            >
+                              Return
+                            </button>
                           </td>
                         </tr>
                       ))}
 
-                      {borrowings.length === 0 && (
+                      {filteredBorrowings.length === 0 && (
                         <tr>
-                          <td colSpan={9} className="py-8 text-center text-slate-500">
-                            No borrowing records yet.
+                          <td colSpan={8} className="py-10 text-center text-slate-500">
+                            No active borrowing records found.
                           </td>
                         </tr>
                       )}
@@ -438,40 +511,81 @@ function App() {
               </div>
             )}
 
-            {currentPage === "history" && (
-              <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left min-w-[700px]">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-slate-600">
-                        <th className="py-3 pr-4">History ID</th>
-                        <th className="py-3 pr-4">Transaction ID</th>
-                        <th className="py-3 pr-4">Borrow Date</th>
-                        <th className="py-3 pr-4">Return Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history.map((item) => (
-                        <tr key={item.id} className="border-b border-slate-100">
-                          <td className="py-4 pr-4 font-semibold text-slate-800">{item.id}</td>
-                          <td className="py-4 pr-4">{item.transaction}</td>
-                          <td className="py-4 pr-4">{item.borrow_date}</td>
-                          <td className="py-4 pr-4">{item.return_date || "-"}</td>
-                        </tr>
-                      ))}
+{currentPage === "history" && (
+  <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-7">
+    <div className="mb-6">
+      <input
+        type="text"
+        placeholder="Search history ID, borrower, email, book, or date"
+        value={historySearch}
+        onChange={(e) => setHistorySearch(e.target.value)}
+        className="w-full md:max-w-xl rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+      />
+    </div>
 
-                      {history.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="py-8 text-center text-slate-500">
-                            No history records yet.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+    <div className="overflow-x-auto rounded-2xl">
+      <table className="w-full text-left min-w-[1100px]">
+        <thead>
+          <tr className="border-b border-slate-200 text-slate-600">
+            <th className="py-4 pr-4 font-bold">ID</th>
+            <th className="py-4 pr-4 font-bold">Borrower</th>
+            <th className="py-4 pr-4 font-bold">Contact</th>
+            <th className="py-4 pr-4 font-bold">Email</th>
+            <th className="py-4 pr-4 font-bold">Book</th>
+            <th className="py-4 pr-4 font-bold">Borrow Date</th>
+            <th className="py-4 pr-4 font-bold">Return Date</th>
+            <th className="py-4 pr-4 font-bold">Overdue</th>
+            <th className="py-4 pr-4 font-bold">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredHistory.map((item) => (
+            <tr
+              key={item.id}
+              className="border-b border-slate-100 hover:bg-blue-50/60 transition"
+            >
+              <td className="py-5 pr-4 font-semibold text-slate-800">
+                {item.id}
+              </td>
+              <td className="py-5 pr-4 font-semibold text-slate-800">
+                {item.borrower_name}
+              </td>
+              <td className="py-5 pr-4">{item.borrower_contact_number}</td>
+              <td className="py-5 pr-4">{item.borrower_email_address}</td>
+              <td className="py-5 pr-4">{item.book_title}</td>
+              <td className="py-5 pr-4">{item.borrow_date}</td>
+              <td className="py-5 pr-4">{item.return_date || "-"}</td>
+              <td className="py-5 pr-4">
+                <span
+                  className={`text-xs px-4 py-2 rounded-full font-bold ${
+                    item.overdue_days > 0
+                      ? "bg-red-100 text-red-700"
+                      : "bg-emerald-100 text-emerald-700"
+                  }`}
+                >
+                  {item.overdue_days} day(s)
+                </span>
+              </td>
+              <td className="py-5 pr-4">
+                <span className="px-4 py-2 rounded-xl bg-slate-200 text-slate-700 font-semibold text-sm">
+                  Completed
+                  </span>
+              </td>             
+            </tr>
+          ))}
+
+          {filteredHistory.length === 0 && (
+            <tr>
+              <td colSpan={9} className="py-10 text-center text-slate-500">
+                No history records found.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
           </>
         )}
 
