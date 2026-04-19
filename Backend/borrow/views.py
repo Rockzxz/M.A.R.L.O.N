@@ -14,9 +14,8 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     queryset = Borrowing.objects.all()
     serializer_class = BorrowingSerializer
 
-    # ==========================================
-    # 1. BORROWING LOGIC (Overrides standard POST)
-    # ==========================================
+    # 1. BORROWING LOGIC 
+    
     def create(self, request, *args, **kwargs):
         """
         Intercepts the creation of a borrowing record to apply business rules.
@@ -36,7 +35,7 @@ class BorrowingViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # RULE 2: Prevent Double-Booking (Check if user already has THIS book unreturned)
+        # RULE 2: Prevent Double-Booking 
         active_borrowing = Borrowing.objects.filter(
             book=book, 
             borrower_email_address=borrower_email, 
@@ -67,9 +66,8 @@ class BorrowingViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
-    # ==========================================
-    # 2. RETURN LOGIC (Custom Endpoint)
-    # ==========================================
+    # 2. RETURN LOGIC 
+    
     @action(detail=True, methods=['post'])
     def return_book(self, request, pk=None):
         """
@@ -87,11 +85,11 @@ class BorrowingViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Use provided return_date if given, otherwise default to today
+       
         return_date_str = request.data.get("return_date")
         if return_date_str:
             try:
-                # Expecting ISO format: "YYYY-MM-DD"
+                
                 year, month, day = map(int, return_date_str.split("-"))
                 borrowing.return_date = date(year, month, day)
             except (TypeError, ValueError):
@@ -102,20 +100,20 @@ class BorrowingViewSet(viewsets.ModelViewSet):
         else:
             borrowing.return_date = date.today()
 
-        # Update the borrowing record
+        
         borrowing.save()
 
-        # Update book inventory and status
+        
         book = borrowing.book
         if book.copies_borrowed > 0:
             book.copies_borrowed -= 1
         book.copies_available += 1
         
-        # If we just returned a copy, it is definitely 'Available' now
+        
         book.status = 'Available' 
         book.save()
 
-        # Update or create the history log for this transaction
+       
         History.objects.update_or_create(
             transaction=borrowing,
             defaults={
