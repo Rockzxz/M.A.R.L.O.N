@@ -57,13 +57,13 @@ function App() {
       [book.title, book.author, book.genre || "", book.isbn || ""]
         .join(" ")
         .toLowerCase()
-        .includes(bookSearch.toLowerCase())
+        .includes(bookSearch.toLowerCase()),
     );
   }, [books, bookSearch]);
 
   const activeBorrowings = useMemo(
     () => borrowings.filter((item) => !item.return_date),
-    [borrowings]
+    [borrowings],
   );
 
   const filteredBorrowings = useMemo(() => {
@@ -78,23 +78,26 @@ function App() {
       ]
         .join(" ")
         .toLowerCase()
-        .includes(borrowingSearch.toLowerCase())
+        .includes(borrowingSearch.toLowerCase()),
     );
   }, [activeBorrowings, borrowingSearch]);
 
   const historyRecords = useMemo(() => {
     return history.map((historyItem) => {
       const relatedBorrowing = borrowings.find(
-        (b) => b.id === historyItem.transaction
+        (b) => b.id === historyItem.transaction,
       );
 
       return {
         ...historyItem,
         borrower_name: relatedBorrowing?.borrower_name || "-",
-        borrower_contact_number: relatedBorrowing?.borrower_contact_number || "-",
+        borrower_contact_number:
+          relatedBorrowing?.borrower_contact_number || "-",
         borrower_email_address: relatedBorrowing?.borrower_email_address || "-",
-        book_title: relatedBorrowing?.book_details?.title || `Book ID: ${relatedBorrowing?.book || "-"}`,
-         overdue_days: relatedBorrowing?.overdue_days ?? 0, 
+        book_title:
+          relatedBorrowing?.book_details?.title ||
+          `Book ID: ${relatedBorrowing?.book || "-"}`,
+        overdue_days: relatedBorrowing?.overdue_days ?? 0,
       };
     });
   }, [history, borrowings]);
@@ -113,18 +116,18 @@ function App() {
       ]
         .join(" ")
         .toLowerCase()
-        .includes(historySearch.toLowerCase())
+        .includes(historySearch.toLowerCase()),
     );
   }, [historyRecords, historySearch]);
 
   const availableBooksCount = useMemo(
     () => books.filter((b) => b.copies_available > 0).length,
-    [books]
+    [books],
   );
 
   const overdueCount = useMemo(
     () => activeBorrowings.filter((item) => item.overdue_days > 0).length,
-    [activeBorrowings]
+    [activeBorrowings],
   );
 
   const handleCreateBook = async (data: Partial<Book>) => {
@@ -226,8 +229,14 @@ function App() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
                   <StatCard label="Total Books" value={books.length} />
-                  <StatCard label="Available Titles" value={availableBooksCount} />
-                  <StatCard label="Active Borrowings" value={activeBorrowings.length} />
+                  <StatCard
+                    label="Available Titles"
+                    value={availableBooksCount}
+                  />
+                  <StatCard
+                    label="Active Borrowings"
+                    value={activeBorrowings.length}
+                  />
                   <StatCard label="Overdue Records" value={overdueCount} />
                 </div>
 
@@ -247,7 +256,8 @@ function App() {
                               {item.borrower_name}
                             </p>
                             <p className="text-sm text-slate-500">
-                              {item.book_details?.title || `Book ID: ${item.book}`}
+                              {item.book_details?.title ||
+                                `Book ID: ${item.book}`}
                             </p>
                           </div>
                           <span
@@ -255,15 +265,15 @@ function App() {
                               item.return_date
                                 ? "bg-slate-200 text-slate-700"
                                 : item.overdue_days > 0
-                                ? "bg-red-100 text-red-700"
-                                : "bg-emerald-100 text-emerald-700"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-emerald-100 text-emerald-700"
                             }`}
                           >
                             {item.return_date
                               ? "Returned"
                               : item.overdue_days > 0
-                              ? `Overdue: ${item.overdue_days} day(s)`
-                              : "Active"}
+                                ? `Overdue: ${item.overdue_days} day(s)`
+                                : "Active"}
                           </span>
                         </div>
                       ))}
@@ -369,9 +379,15 @@ function App() {
                           <td className="py-5 pr-4 font-semibold text-slate-800">
                             {book.title}
                           </td>
-                          <td className="py-5 pr-4 text-slate-700">{book.author}</td>
-                          <td className="py-5 pr-4 text-slate-700">{book.isbn || "-"}</td>
-                          <td className="py-5 pr-4 text-slate-700">{book.genre || "-"}</td>
+                          <td className="py-5 pr-4 text-slate-700">
+                            {book.author}
+                          </td>
+                          <td className="py-5 pr-4 text-slate-700">
+                            {book.isbn || "-"}
+                          </td>
+                          <td className="py-5 pr-4 text-slate-700">
+                            {book.genre || "-"}
+                          </td>
                           <td className="py-5 pr-4 text-slate-700">
                             {book.year_published || "-"}
                           </td>
@@ -389,7 +405,9 @@ function App() {
                                   : "bg-red-100 text-red-700"
                               }`}
                             >
-                              {book.copies_available > 0 ? "Available" : "Borrowed"}
+                              {book.copies_available > 0
+                                ? "Available"
+                                : "Borrowed"}
                             </span>
                           </td>
                           <td className="py-5 pr-4">
@@ -416,7 +434,10 @@ function App() {
 
                       {filteredBooks.length === 0 && (
                         <tr>
-                          <td colSpan={9} className="py-10 text-center text-slate-500">
+                          <td
+                            colSpan={9}
+                            className="py-10 text-center text-slate-500"
+                          >
                             No books found.
                           </td>
                         </tr>
@@ -469,10 +490,15 @@ function App() {
                           <td className="py-5 pr-4 font-semibold text-slate-800">
                             {item.borrower_name}
                           </td>
-                          <td className="py-5 pr-4">{item.borrower_contact_number}</td>
-                          <td className="py-5 pr-4">{item.borrower_email_address}</td>
                           <td className="py-5 pr-4">
-                            {item.book_details?.title || `Book ID: ${item.book}`}
+                            {item.borrower_contact_number}
+                          </td>
+                          <td className="py-5 pr-4">
+                            {item.borrower_email_address}
+                          </td>
+                          <td className="py-5 pr-4">
+                            {item.book_details?.title ||
+                              `Book ID: ${item.book}`}
                           </td>
                           <td className="py-5 pr-4">{item.borrow_date}</td>
                           <td className="py-5 pr-4">{item.due_date}</td>
@@ -500,7 +526,10 @@ function App() {
 
                       {filteredBorrowings.length === 0 && (
                         <tr>
-                          <td colSpan={8} className="py-10 text-center text-slate-500">
+                          <td
+                            colSpan={8}
+                            className="py-10 text-center text-slate-500"
+                          >
                             No active borrowing records found.
                           </td>
                         </tr>
@@ -511,81 +540,90 @@ function App() {
               </div>
             )}
 
-{currentPage === "history" && (
-  <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-7">
-    <div className="mb-6">
-      <input
-        type="text"
-        placeholder="Search history ID, borrower, email, book, or date"
-        value={historySearch}
-        onChange={(e) => setHistorySearch(e.target.value)}
-        className="w-full md:max-w-xl rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
-      />
-    </div>
+            {currentPage === "history" && (
+              <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-7">
+                <div className="mb-6">
+                  <input
+                    type="text"
+                    placeholder="Search history ID, borrower, email, book, or date"
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    className="w-full md:max-w-xl rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  />
+                </div>
 
-    <div className="overflow-x-auto rounded-2xl">
-      <table className="w-full text-left min-w-[1100px]">
-        <thead>
-          <tr className="border-b border-slate-200 text-slate-600">
-            <th className="py-4 pr-4 font-bold">ID</th>
-            <th className="py-4 pr-4 font-bold">Borrower</th>
-            <th className="py-4 pr-4 font-bold">Contact</th>
-            <th className="py-4 pr-4 font-bold">Email</th>
-            <th className="py-4 pr-4 font-bold">Book</th>
-            <th className="py-4 pr-4 font-bold">Borrow Date</th>
-            <th className="py-4 pr-4 font-bold">Return Date</th>
-            <th className="py-4 pr-4 font-bold">Overdue</th>
-            <th className="py-4 pr-4 font-bold">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredHistory.map((item) => (
-            <tr
-              key={item.id}
-              className="border-b border-slate-100 hover:bg-blue-50/60 transition"
-            >
-              <td className="py-5 pr-4 font-semibold text-slate-800">
-                {item.id}
-              </td>
-              <td className="py-5 pr-4 font-semibold text-slate-800">
-                {item.borrower_name}
-              </td>
-              <td className="py-5 pr-4">{item.borrower_contact_number}</td>
-              <td className="py-5 pr-4">{item.borrower_email_address}</td>
-              <td className="py-5 pr-4">{item.book_title}</td>
-              <td className="py-5 pr-4">{item.borrow_date}</td>
-              <td className="py-5 pr-4">{item.return_date || "-"}</td>
-              <td className="py-5 pr-4">
-                <span
-                  className={`text-xs px-4 py-2 rounded-full font-bold ${
-                    item.overdue_days > 0
-                      ? "bg-red-100 text-red-700"
-                      : "bg-emerald-100 text-emerald-700"
-                  }`}
-                >
-                  {item.overdue_days} day(s)
-                </span>
-              </td>
-              <td className="py-5 pr-4">
-                <span className="px-4 py-2 rounded-xl bg-slate-200 text-slate-700 font-semibold text-sm">
-                  Completed
-                  </span>
-              </td>             
-            </tr>
-          ))}
+                <div className="overflow-x-auto rounded-2xl">
+                  <table className="w-full text-left min-w-[1100px]">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-600">
+                        <th className="py-4 pr-4 font-bold">ID</th>
+                        <th className="py-4 pr-4 font-bold">Borrower</th>
+                        <th className="py-4 pr-4 font-bold">Contact</th>
+                        <th className="py-4 pr-4 font-bold">Email</th>
+                        <th className="py-4 pr-4 font-bold">Book</th>
+                        <th className="py-4 pr-4 font-bold">Borrow Date</th>
+                        <th className="py-4 pr-4 font-bold">Return Date</th>
+                        <th className="py-4 pr-4 font-bold">Overdue</th>
+                        <th className="py-4 pr-4 font-bold">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredHistory.map((item) => (
+                        <tr
+                          key={item.id}
+                          className="border-b border-slate-100 hover:bg-blue-50/60 transition"
+                        >
+                          <td className="py-5 pr-4 font-semibold text-slate-800">
+                            {item.id}
+                          </td>
+                          <td className="py-5 pr-4 font-semibold text-slate-800">
+                            {item.borrower_name}
+                          </td>
+                          <td className="py-5 pr-4">
+                            {item.borrower_contact_number}
+                          </td>
+                          <td className="py-5 pr-4">
+                            {item.borrower_email_address}
+                          </td>
+                          <td className="py-5 pr-4">{item.book_title}</td>
+                          <td className="py-5 pr-4">{item.borrow_date}</td>
+                          <td className="py-5 pr-4">
+                            {item.return_date || "-"}
+                          </td>
+                          <td className="py-5 pr-4">
+                            <span
+                              className={`text-xs px-4 py-2 rounded-full font-bold ${
+                                item.overdue_days > 0
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-emerald-100 text-emerald-700"
+                              }`}
+                            >
+                              {item.overdue_days} day(s)
+                            </span>
+                          </td>
+                          <td className="py-5 pr-4">
+                            <span className="px-4 py-2 rounded-xl bg-slate-200 text-slate-700 font-semibold text-sm">
+                              Completed
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
 
-          {filteredHistory.length === 0 && (
-            <tr>
-              <td colSpan={9} className="py-10 text-center text-slate-500">
-                No history records found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
+                      {filteredHistory.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan={9}
+                            className="py-10 text-center text-slate-500"
+                          >
+                            No history records found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </>
         )}
 
