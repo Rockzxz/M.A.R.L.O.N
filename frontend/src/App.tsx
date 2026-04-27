@@ -11,7 +11,7 @@ import { api } from "./services/api";
 import { Book, Borrowing, HistoryItem } from "./types";
 
 function App() {
- const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState("dashboard");
 
   const [books, setBooks] = useState<Book[]>([]);
@@ -48,7 +48,9 @@ function App() {
       const message = err.message || "Failed to fetch data.";
 
       if (
-        message.toLowerCase().includes("authentication credentials were not provided") ||
+        message
+          .toLowerCase()
+          .includes("authentication credentials were not provided") ||
         message.toLowerCase().includes("invalid token")
       ) {
         api.logout();
@@ -201,10 +203,10 @@ function App() {
   };
 
   const handleLogout = () => {
-  api.logout();
-  setIsLoggedIn(false);
-  setCurrentPage("dashboard");
-};
+    api.logout();
+    setIsLoggedIn(false);
+    setCurrentPage("dashboard");
+  };
 
   const pageTitleMap: Record<string, { title: string; subtitle: string }> = {
     dashboard: {
@@ -243,10 +245,10 @@ function App() {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-cyan-50">
       <Sidebar
-  currentPage={currentPage}
-  setCurrentPage={setCurrentPage}
-  onLogout={handleLogout}
-/>
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        onLogout={handleLogout}
+      />
 
       <main className="flex-1 p-8">
         <Header
@@ -666,8 +668,9 @@ function App() {
               </div>
             )}
 
-           {currentPage === "profile" && (<ProfilePage borrowings={borrowings} history={history} />
-)}
+            {currentPage === "profile" && (
+              <ProfilePage borrowings={borrowings} history={history} />
+            )}
           </>
         )}
 
