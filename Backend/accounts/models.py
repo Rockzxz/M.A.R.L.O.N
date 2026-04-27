@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+import random
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
@@ -18,10 +19,18 @@ class CustomUser(AbstractUser):
     # User role
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='borrower')
 
-    # Tell Django to use 'email' instead of 'username' for logging in
+    # Email verification fields
+    otp = models.CharField(max_length=6, blank=True, null=True)
+    is_verified = models.BooleanField(default=False)
+
+    
     USERNAME_FIELD = 'email'
-    # 'username' is required by default, so we leave it in REQUIRED_FIELDS for terminal superusers
     REQUIRED_FIELDS = ['username']
+
+    def generate_otp(self):
+        """Generates a random 6-digit OTP and saves it to the user."""
+        self.otp = str(random.randint(100000, 999999))
+        self.save()
 
     def __str__(self):
         return self.email
